@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.foolishfan.user_v10.Login">
+
+    <Button
+        android:id="@+id/kaiguan"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:text="蓝牙开关"
+
+        />
+
+    <Switch
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/switchOpenAndClose"
+        android:textOff="关闭"
+        android:textOn="打开"
+        android:checked="false"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/textView"
+        android:layout_toEndOf="@+id/textView" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="允许本设备对外可见"
+        android:id="@+id/buttonVisible"
+        android:layout_below="@+id/kaiguan"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="搜索其他的设备"
+        android:id="@+id/buttonSeraveDevice"
+        android:layout_below="@+id/buttonVisible"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="退出程序"
+        android:id="@+id/buttonExit"
+
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="蓝牙开关"
+        android:textColor="#FFFFFF"
+        android:id="@+id/textView"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/listViewShow"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/buttonSeraveDevice"
+        android:layout_above="@+id/buttonExit" />
+
+
+</RelativeLayout>

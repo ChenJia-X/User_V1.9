@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="您好，欢迎进入激光对中系统！"
+        android:id="@+id/textView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginLeft="50dp"
+        android:layout_marginTop="6dp"
+        android:textSize="16dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="新对中"
+        android:id="@+id/new_measure"
+        android:layout_below="@+id/textView"
+        android:layout_marginTop="36dp"
+        android:onClick="back_to_login"
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:background="#d95b5b"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="设置"
+        android:id="@+id/setting"
+        android:layout_below="@+id/new_measure"
+        android:layout_marginTop="36dp"
+
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:background="#d95b5b"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="报告"
+        android:id="@+id/jiqiku"
+        android:layout_below="@+id/setting"
+        android:layout_marginTop="36dp"
+
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:background="#d95b5b"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="帮助"
+        android:id="@+id/help"
+        android:layout_below="@+id/jiqiku"
+        android:layout_marginTop="36dp"
+
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:background="#d95b5b"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="退出"
+        android:id="@+id/returnback"
+        android:layout_below="@+id/help"
+        android:layout_marginTop="36dp"
+        android:textColor="#ffffff"
+        android:textSize="20sp"
+        android:background="#d95b5b"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+</RelativeLayout>
