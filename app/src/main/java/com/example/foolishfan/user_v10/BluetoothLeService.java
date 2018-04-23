@@ -376,15 +376,31 @@ public class BluetoothLeService extends Service {
     private String bluetoothDeviceAddress;
 
 
-    private LocalBinder localBinder = new LocalBinder();
+    private BluetoothServiceBinder bluetoothServiceBinder = new BluetoothServiceBinder();
 
-    class LocalBinder extends Binder {
-        BluetoothLeService getBluetoothService() {
-            return BluetoothLeService.this;
+    class BluetoothServiceBinder extends Binder {
+        private boolean isBound = false;
+
+        public void setBound(boolean bound) {
+            isBound = bound;
+        }
+
+        /**
+         * Before call unbindService()，you must call this method to prevent
+         * "java.lang.IllegalArgumentException: Service not registered"
+         *
+         * @return
+         */
+        public boolean isBound() {
+            return isBound;
         }
 
         void sendData(String sendString) {
             BluetoothLeService.this.sendData(sendString);
+        }
+
+        public void connect(BluetoothDevice device) {
+            BluetoothLeService.this.connect(device);
         }
     }
 
@@ -392,7 +408,7 @@ public class BluetoothLeService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return localBinder;
+        return bluetoothServiceBinder;
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
@@ -475,7 +491,7 @@ public class BluetoothLeService extends Service {
      *
      * @param device
      */
-    public void connect(BluetoothDevice device) {
+    private void connect(BluetoothDevice device) {
         //第二个参数表示断了之后自动重连
         if (device != null) {
             bluetoothGatt = device.connectGatt(this, true, gattCallback);

@@ -44,7 +44,7 @@ public class NewMeasure extends AppCompatActivity {
     //Bluetooth
     private BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private LeDeviceListAdapter leDeviceListAdapter;
-    private BluetoothLeService bluetoothLeService;
+    private BluetoothLeService.BluetoothServiceBinder bluetoothServiceBinder;
     private static final int REQUEST_ENABLE_BT = 1;
     private boolean mScanning;
     private Handler handler = new Handler();
@@ -64,12 +64,14 @@ public class NewMeasure extends AppCompatActivity {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            bluetoothLeService = ((BluetoothLeService.LocalBinder) service).getBluetoothService();
+            bluetoothServiceBinder = (BluetoothLeService.BluetoothServiceBinder) service;
+            bluetoothServiceBinder.setBound(true);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            bluetoothLeService = null;
+            bluetoothServiceBinder.setBound(false);
+            bluetoothServiceBinder = null;
         }
     };
     private Context context = NewMeasure.this;
@@ -112,7 +114,9 @@ public class NewMeasure extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        unbindService(serviceConnection);
+        if (bluetoothServiceBinder != null && bluetoothServiceBinder.isBound()) {
+            unbindService(serviceConnection);
+        }
         localBroadcastManager.unregisterReceiver(baseGattReceiver);
     }
 
@@ -274,7 +278,7 @@ public class NewMeasure extends AppCompatActivity {
         mScanLV.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                bluetoothLeService.connect(leDeviceListAdapter.getDevice(position));
+                bluetoothServiceBinder.connect(leDeviceListAdapter.getDevice(position));
                 dialog.dismiss();
             }
         });
