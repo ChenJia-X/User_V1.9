@@ -1,23 +1,24 @@
 package com.example.foolishfan.user_v10;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,14 +28,10 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import com.yanzhenjie.permission.AndPermission;
-import com.yanzhenjie.permission.PermissionListener;
-import com.yanzhenjie.permission.Rationale;
-import com.yanzhenjie.permission.RationaleListener;
+import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 import static com.example.foolishfan.user_v10.Utils.showToast;
 
@@ -42,22 +39,42 @@ import static com.example.foolishfan.user_v10.Utils.showToast;
 public class NewMeasure extends AppCompatActivity {
 
     //Bluetooth
-    private BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     private LeDeviceListAdapter leDeviceListAdapter;
     private BluetoothLeService.BluetoothServiceBinder bluetoothServiceBinder;
+    private AlertDialog dialog;
     private static final int REQUEST_ENABLE_BT = 1;
-    private boolean mScanning;
-    private Handler handler = new Handler();
-    //Stops scanning after 10 seconds.
-    private static final long SCAN_PERIOD = 10000;
-
 
     //Permission
-    private static final int REQUEST_LOCATION = 101;
-    private static final int REQUEST_SETTINGS_LOCATION = 100;
+    private static final int REQUEST_COARSE_LOCATION_PERMISSIONS = 101;
 
-    private LocalBroadcastManager localBroadcastManager;
-    private BaseGattReceiver baseGattReceiver = new BaseGattReceiver();
+    private BroadcastReceiver baseGattReceiver = new BaseGattReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            super.onReceive(context, intent);
+            String action = intent.getAction();
+            // When discovery finds a device
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                // Get the BluetoothDevice object from the Intent
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                // If it's already paired, skip it, because it's been listed already
+                if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+                    leDeviceListAdapter.addDevice(device);
+                    leDeviceListAdapter.notifyDataSetChanged();
+                }
+                // When discovery is finished, change the Activity title
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                showToast(context, "蓝牙扫描关闭");
+            } else if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+                BluetoothLeService.connectionState = BluetoothAdapter.STATE_CONNECTED;
+                showToast(context, "蓝牙连接成功");
+                cancelDiscovery();
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        }
+    };
 
     // Code to manage Service lifecycle.
     private final ServiceConnection serviceConnection = new ServiceConnection() {
@@ -74,6 +91,7 @@ public class NewMeasure extends AppCompatActivity {
             bluetoothServiceBinder = null;
         }
     };
+
     private Context context = NewMeasure.this;
 
     @Override
@@ -88,27 +106,21 @@ public class NewMeasure extends AppCompatActivity {
         bluetoothConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent1 = new Intent(NewMeasure.this, BluetoothLeService.class);
-                startService(intent1);
+                Intent intent = new Intent(context, BluetoothLeService.class);
+                bindService(intent, serviceConnection, BIND_AUTO_CREATE);
                 prepareForScan();
-
             }
         });
         scanQRCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent openScanQRCode = new Intent(NewMeasure.this, ScanQRCodeActivity.class);
+                Intent openScanQRCode = new Intent(context, ScanQRCodeActivity.class);
                 startActivity(openScanQRCode);
             }
         });
 
-        Intent intent = new Intent(this, BluetoothLeService.class);
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
-
-        localBroadcastManager = LocalBroadcastManager.getInstance(this);
-        localBroadcastManager.registerReceiver(baseGattReceiver,
+        registerReceiver(baseGattReceiver,
                 BaseGattReceiver.getIntentFilter(BaseGattReceiver.COMMUNICATE_TYPE));
-
     }
 
     @Override
@@ -117,8 +129,9 @@ public class NewMeasure extends AppCompatActivity {
         if (bluetoothServiceBinder != null && bluetoothServiceBinder.isBound()) {
             unbindService(serviceConnection);
         }
-        localBroadcastManager.unregisterReceiver(baseGattReceiver);
+        unregisterReceiver(baseGattReceiver);
     }
+
 
     /**
      * ------------------------------获取权限----------------------------------------------------
@@ -129,30 +142,23 @@ public class NewMeasure extends AppCompatActivity {
      * 检测是否需要运行时权限；
      */
     private void prepareForScan() {
-        // Use this check to determine whether BLE is supported on the device.  Then you can
-        // selectively disable BLE-related features.
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            showToast(context, R.string.ble_not_supported);
-            finish();
-        }
         // Ensures Bluetooth is enabled on the device.  If Bluetooth is not currently enabled,
         // fire an intent to display a mScanList asking the user to grant permission to enable it.
-        if (!bluetoothAdapter.isEnabled()) {
+        if (!mBluetoothAdapter.isEnabled()) {
             showDialogForEnable(context, R.string.dialog_goto_settings_bluetooth,
                     BluetoothAdapter.ACTION_REQUEST_ENABLE, REQUEST_ENABLE_BT);
             return;//必须加这一句，否则下一个判断会覆盖这个判断，会先出现下一个的dialog窗口。
         }
-        //判断Location的是否开启
-        if (!isLocationOpen(context)) {
-            showDialogForEnable(context, R.string.dialog_goto_settings_location,
-                    Settings.ACTION_LOCATION_SOURCE_SETTINGS, REQUEST_SETTINGS_LOCATION);
-        } else {
-            if (Build.VERSION.SDK_INT >= 23) {
-                //Android6.0需要动态申请权限
-                askForBLEPermission();
-            } else {
+        //Android6.0以上需要动态申请权限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int hasPermission = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
+            if (hasPermission == PackageManager.PERMISSION_GRANTED) {
                 showScanListDialog();
+            } else {
+                askForRunTimePermission();
             }
+        } else {
+            showScanListDialog();
         }
     }
 
@@ -180,74 +186,74 @@ public class NewMeasure extends AppCompatActivity {
     }
 
     /**
-     * 判断位置信息是否开启
-     *
-     * @param context
-     * @return
-     */
-    private static boolean isLocationOpen(final Context context) {
-        LocationManager manager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        //gps定位
-        boolean isGpsProvider = manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        //网络定位
-        boolean isNetWorkProvider = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        return isGpsProvider || isNetWorkProvider;
-    }
-
-    /**
      * 运行时权限
      */
-    private void askForBLEPermission() {
-        AndPermission.with(NewMeasure.this)
-                .requestCode(REQUEST_LOCATION)
-                .permission(Manifest.permission.ACCESS_FINE_LOCATION)
-                .rationale(new RationaleListener() {
-                    @Override
-                    public void showRequestPermissionRationale(int requestCode, final Rationale rationale) {
-                        //AndPermission.rationaleDialog(MainActivity.this,rationale).show();
-                        new AlertDialog.Builder(context)
-                                .setTitle("Tips")
-                                .setMessage(R.string.dialog_permission_location)
-                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        rationale.resume();
-                                    }
-                                })
-                                .setNegativeButton("NO", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        rationale.cancel();
-                                    }
-                                }).show();
-                    }
-                })
-                .callback(listener)
-                .start();
+    private void askForRunTimePermission() {
+        ActivityCompat.requestPermissions(NewMeasure.this,
+                new String[]{android.Manifest.permission.ACCESS_COARSE_LOCATION},
+                REQUEST_COARSE_LOCATION_PERMISSIONS);
     }
 
-    /**
-     * AndPermission的Callback
-     */
-    private PermissionListener listener = new PermissionListener() {
-        @Override
-        public void onSucceed(int requestCode, @NonNull List<String> grantPermissions) {
-            if (requestCode == REQUEST_LOCATION) {
-                showScanListDialog();
-            }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (resultCode == Activity.RESULT_OK) {
+                    prepareForScan();
+                } else {
+                    Toast.makeText(context, "打开失败，请手动打开蓝牙开关", Toast.LENGTH_SHORT).show();
+                }
+                break;
         }
+    }
 
-        @Override
-        public void onFailed(int requestCode, @NonNull List<String> deniedPermissions) {
-            if (requestCode == REQUEST_LOCATION) {
-                if (AndPermission.hasAlwaysDeniedPermission(NewMeasure.this, deniedPermissions)) {
-                    AndPermission.defaultSettingDialog(NewMeasure.this, 400)
-                            .setMessage(R.string.dialog_permission_goto_app_permissions)
-                            .show();
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case REQUEST_COARSE_LOCATION_PERMISSIONS: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    prepareForScan();
+                    return;
+                }
+                if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[0])) {
+                        //用户勾选不再询问按钮
+                        // 解释原因，并且引导用户至设置页手动授权
+                        new AlertDialog.Builder(this)
+                                .setMessage("需要开启权限，否则无法使用。请到权限管理页面手动给予权限")
+                                .setPositiveButton("去授权", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        //引导用户至设置页手动授权
+                                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        Uri uri = Uri.fromParts("package", getApplicationContext().getPackageName(), null);
+                                        intent.setData(uri);
+                                        startActivity(intent);
+                                    }
+                                })
+                                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        //引导用户手动授权，权限请求失败
+                                    }
+                                })
+                                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                                    @Override
+                                    public void onCancel(DialogInterface dialog) {
+                                        //引导用户手动授权，权限请求失败
+                                    }
+                                })
+                                .show();
+                    } else {
+                        prepareForScan();
+                    }
                 }
             }
         }
-    };
+    }
+
 
 
     /**
@@ -258,20 +264,21 @@ public class NewMeasure extends AppCompatActivity {
      * 显示蓝牙搜索列表
      */
     private void showScanListDialog() {
-        View mScanList = getLayoutInflater().inflate(R.layout.dialog_scan_list,
+        View scanView = getLayoutInflater().inflate(R.layout.dialog_scan_list,
                 (ViewGroup) findViewById(R.id.dialog_scan_list));
-        final AlertDialog dialog = new AlertDialog.Builder(this)
+        dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_scan_title)
-                .setView(mScanList)
+                .setView(scanView)
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
+                        cancelDiscovery();
                     }
                 })
                 .setCancelable(true)
                 .show();
-        ListView mScanLV = (ListView) mScanList.findViewById(R.id.scan_lv);
+        ListView mScanLV = (ListView) scanView.findViewById(R.id.scan_lv);
         // Initializes list view adapter.
         leDeviceListAdapter = new LeDeviceListAdapter(context, R.layout.scan_lv_item);
         mScanLV.setAdapter(leDeviceListAdapter);
@@ -279,10 +286,22 @@ public class NewMeasure extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 bluetoothServiceBinder.connect(leDeviceListAdapter.getDevice(position));
-                dialog.dismiss();
             }
         });
-        scanLeDevice(true);
+
+        //在执行设备发现之前，有必要查询已配对的设备集，以了解所需的设备是否处于已知状态。
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+        // If there are paired devices
+        if (pairedDevices.size() > 0) {
+            // Loop through paired devices
+            for (BluetoothDevice device : pairedDevices) {
+                // Add the name and address to an array adapter to show in a ListView
+                leDeviceListAdapter.addDevice(device);
+            }
+            leDeviceListAdapter.notifyDataSetChanged();
+        }
+
+        scanClassicDevice();
     }
 
     /**
@@ -359,46 +378,16 @@ public class NewMeasure extends AppCompatActivity {
         }
     }
 
-    /**
-     * scan BLE devices
-     *
-     * @param enable
-     */
-    private void scanLeDevice(final boolean enable) {
-        if (enable) {
-            // Stops scanning after a pre-defined scan period.
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    bluetoothAdapter.stopLeScan(mLeScanCallback);
-                }
-            }, SCAN_PERIOD);
-
-            mScanning = true;
-            bluetoothAdapter.startLeScan(mLeScanCallback);
-        } else {
-            mScanning = false;
-            bluetoothAdapter.stopLeScan(mLeScanCallback);
-        }
+    private void scanClassicDevice() {
+        // If we're already discovering, stop it
+        cancelDiscovery();
+        // Request discover from BluetoothAdapter
+        mBluetoothAdapter.startDiscovery();
     }
 
-    /**
-     * Device scan callback.
-     */
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-
-                @Override
-                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            leDeviceListAdapter.addDevice(device);
-                            leDeviceListAdapter.notifyDataSetChanged();
-                        }
-                    });
-                }
-            };
-
+    private void cancelDiscovery() {
+        if (mBluetoothAdapter.isDiscovering()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
+    }
 }
