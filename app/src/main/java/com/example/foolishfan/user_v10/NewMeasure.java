@@ -26,12 +26,14 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.example.foolishfan.user_v10.Utils.showToast;
 
@@ -44,6 +46,7 @@ public class NewMeasure extends AppCompatActivity {
     private BluetoothLeService.BluetoothServiceBinder bluetoothServiceBinder;
     private AlertDialog dialog;
     private static final int REQUEST_ENABLE_BT = 1;
+    private static final int RESULT_QRCODE = 111;
 
     //Permission
     private static final int REQUEST_COARSE_LOCATION_PERMISSIONS = 101;
@@ -65,13 +68,8 @@ public class NewMeasure extends AppCompatActivity {
                 // When discovery is finished, change the Activity title
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                 showToast(context, "蓝牙扫描关闭");
-            } else if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
-                BluetoothLeService.connectionState = BluetoothAdapter.STATE_CONNECTED;
-                showToast(context, "蓝牙连接成功");
-                cancelDiscovery();
-                if (dialog != null) {
-                    dialog.dismiss();
-                }
+            } else if (action.equals(BaseGattReceiver.UPDATE_UI)) {
+                dialog.dismiss();
             }
         }
     };
@@ -94,14 +92,30 @@ public class NewMeasure extends AppCompatActivity {
 
     private Context context = NewMeasure.this;
 
+    private EditText deviceNumber;
+    private EditText a;
+    private EditText b;
+    private EditText c;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.new_measure);
+        bindComponent();
+        registerReceiver(baseGattReceiver,
+                BaseGattReceiver.getIntentFilter(BaseGattReceiver.COMMUNICATE_TYPE));
+    }
+
+    private void bindComponent() {
         Button bluetoothConnect = (Button) findViewById(R.id.lianjie);
         Button scanQRCode = (Button) findViewById(R.id.scan_qrcode);
         Button measure = (Button) findViewById(R.id.measure);
         Button calculate = (Button) findViewById(R.id.calculate);
+        deviceNumber = (EditText) findViewById(R.id.device_number_etext);
+        a = (EditText) findViewById(R.id.a_etext);
+        b = (EditText) findViewById(R.id.b_etext);
+        c = (EditText) findViewById(R.id.c_etext);
+
         //给button按钮设置一个点击事件
         bluetoothConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,12 +129,9 @@ public class NewMeasure extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent openScanQRCode = new Intent(context, ScanQRCodeActivity.class);
-                startActivity(openScanQRCode);
+                startActivityForResult(openScanQRCode, RESULT_QRCODE);
             }
         });
-
-        registerReceiver(baseGattReceiver,
-                BaseGattReceiver.getIntentFilter(BaseGattReceiver.COMMUNICATE_TYPE));
     }
 
     @Override
@@ -131,6 +142,7 @@ public class NewMeasure extends AppCompatActivity {
         }
         unregisterReceiver(baseGattReceiver);
     }
+
 
 
     /**
@@ -205,6 +217,21 @@ public class NewMeasure extends AppCompatActivity {
                     Toast.makeText(context, "打开失败，请手动打开蓝牙开关", Toast.LENGTH_SHORT).show();
                 }
                 break;
+            case RESULT_QRCODE:
+                if (resultCode == Activity.RESULT_OK) {
+                    String result = data.getStringExtra("result");
+                    Pattern pattern = Pattern.compile(";");//注意必须要是英文的分号
+                    String[] results = pattern.split(result);
+                    if (results.length == 4) {
+                        deviceNumber.setText(results[0]);
+                        a.setText(results[1]);
+                        b.setText(results[2]);
+                        c.setText(results[3]);
+                    } else {
+                        showToast(context, "二维码格式错误！");
+                    }
+                }
+
         }
     }
 
