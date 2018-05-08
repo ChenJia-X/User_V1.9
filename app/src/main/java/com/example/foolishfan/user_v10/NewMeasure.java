@@ -31,14 +31,16 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.example.foolishfan.user_v10.Utils.showToast;
 
 
-public class NewMeasure extends AppCompatActivity {
+public class NewMeasure extends AppCompatActivity implements UpdateAngle {
 
     //Bluetooth
     private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -81,6 +83,7 @@ public class NewMeasure extends AppCompatActivity {
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             bluetoothServiceBinder = (BluetoothLeService.BluetoothServiceBinder) service;
             bluetoothServiceBinder.setBound(true);
+            bluetoothServiceBinder.setUpdateAngle(NewMeasure.this);
         }
 
         @Override
@@ -96,6 +99,8 @@ public class NewMeasure extends AppCompatActivity {
     private EditText a;
     private EditText b;
     private EditText c;
+    private EditText zhuDongAngle;
+    private EditText congDongAngle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +120,32 @@ public class NewMeasure extends AppCompatActivity {
         a = (EditText) findViewById(R.id.a_etext);
         b = (EditText) findViewById(R.id.b_etext);
         c = (EditText) findViewById(R.id.c_etext);
+        zhuDongAngle = (EditText) findViewById(R.id.text_zhudongzhou_angle);
+        congDongAngle = (EditText) findViewById(R.id.text_congdongzhou_angle);
+        findViewById(R.id.measure).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String zhu = zhuDongAngle.getText().toString();
+                String cong = congDongAngle.getText().toString();
+                bluetoothServiceBinder.write(zhu);
+            }
+        });
+        findViewById(R.id.calculate).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Date dt = new Date();
+                //最后的aa表示“上午”或“下午”    HH表示24小时制    如果换成hh表示12小时制
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+                String temp_str = sdf.format(dt);
+                Bundle bundle = new Bundle();
+                //bundle.putDoubleArray("result", bluetoothServiceBinder.calculate());
+                bundle.putDoubleArray("result", new double[]{23, 232, 123, 324.1});
+                bundle.putString("deviceNumber", deviceNumber.getText().toString());
+                bundle.putString("tester", getSharedPreferences("userInfo", 0).getString("USER_NAME", "test"));
+                bundle.putString("date", temp_str);
+                ResultActivity.actionStart(context, bundle);
+            }
+        });
 
         //给button按钮设置一个点击事件
         bluetoothConnect.setOnClickListener(new View.OnClickListener() {
@@ -143,6 +174,11 @@ public class NewMeasure extends AppCompatActivity {
         unregisterReceiver(baseGattReceiver);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        bluetoothServiceBinder.cancel();//关闭socket
+    }
 
 
     /**
@@ -282,7 +318,6 @@ public class NewMeasure extends AppCompatActivity {
     }
 
 
-
     /**
      * -------------------------------扫描-------------------------------------------------------
      */
@@ -417,4 +452,28 @@ public class NewMeasure extends AppCompatActivity {
             mBluetoothAdapter.cancelDiscovery();
         }
     }
+
+
+    @Override
+    public void updateZhuDong(String angle) {
+        zhuDongAngle.setText(angle);
+    }
+
+    @Override
+    public void updateCongDong(String angle) {
+        congDongAngle.setText(angle);
+    }
+
+    @Override
+    public void updateToast(String message) {
+        showToast(context, message);
+    }
+}
+
+interface UpdateAngle {
+    void updateZhuDong(String angle);
+
+    void updateCongDong(String angle);
+
+    void updateToast(String message);
 }

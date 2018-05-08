@@ -7,6 +7,8 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
     tools:context="com.example.foolishfan.user_v10.Login">
 
     <ScrollView
@@ -141,21 +143,21 @@
                     android:layout_toRightOf="@+id/c_btn" />
             </LinearLayout>
 
-            <Button
+            <!--<Button
                 android:id="@+id/confirm"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
                 android:text="角度为0度时请确认"
                 android:layout_below="@+id/c_layout"
                 android:layout_marginTop="20dp"
-                android:layout_marginStart="110dp" />
+                android:layout_marginStart="110dp" />-->
 
             <LinearLayout
                 android:id="@+id/angle_layout"
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/confirm"
+                android:layout_below="@id/c_layout"
                 android:layout_marginTop="20dp">
 
                 <LinearLayout

@@ -21,10 +21,9 @@ public class User extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent1 = new Intent(User.this, NewMeasure.class);
                 startActivity(intent1);
-
-
             }
         });
+
 
         Button btn3 = (Button) findViewById(R.id.jiqiku);
         //给button按钮设置一个点击事件
@@ -55,5 +54,11 @@ public class User extends AppCompatActivity {
                 startActivity(intent5);
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        finish();
     }
 }
