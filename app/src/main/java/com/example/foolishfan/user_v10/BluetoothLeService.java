@@ -67,19 +67,23 @@ public class BluetoothLeService extends Service {
 
         public void write(String zhu) {
             double zhuDong = Double.parseDouble(zhu);
-            if (isNearTarget(zhuDong, 0)) {
+            if (isNearTarget(zhuDong, 90)) {
+                updateAngle.updateToast("已测量！");
                 ConnectedDeviceTask.command = "1";//12点
                 ConnectedDeviceTask.write(new byte[]{Byte.parseByte(ConnectedDeviceTask.command)});
                 return;
-            } else if (isNearTarget(zhuDong, 90)) {
+            } else if (isNearTarget(zhuDong, 180)) {
+                updateAngle.updateToast("已测量！");
                 ConnectedDeviceTask.command = "2";//3点
                 ConnectedDeviceTask.write(new byte[]{Byte.parseByte(ConnectedDeviceTask.command)});
                 return;
-            } else if (isNearTarget(zhuDong, 180)) {
+            } else if (isNearTarget(zhuDong, -90)) {
+                updateAngle.updateToast("已测量！");
                 ConnectedDeviceTask.command = "3";
                 ConnectedDeviceTask.write(new byte[]{Byte.parseByte(ConnectedDeviceTask.command)});
                 return;
-            } else if (isNearTarget(zhuDong, -90)) {
+            } else if (isNearTarget(zhuDong, 0)) {
+                updateAngle.updateToast("已测量！");
                 ConnectedDeviceTask.command = "4";
                 ConnectedDeviceTask.write(new byte[]{Byte.parseByte(ConnectedDeviceTask.command)});
             } else {
@@ -92,8 +96,13 @@ public class BluetoothLeService extends Service {
             }
         }
 
-        private boolean isNearTarget(double angle, double target) {
+        private boolean isNearTarget(double angle, int target) {
+            if (target == 180) {
+                return target - 5 <= angle || angle <= -1 * target + 5;
+            }
+
             return angle >= target - 5 && angle <= target + 5;
+
         }
 
         public double[] calculate() {
@@ -284,16 +293,16 @@ public class BluetoothLeService extends Service {
                             }
 
                             LaserAlignment laserAlignment = new LaserAlignment();
-                            if (ConnectedDeviceTask.command.equals("a")) {
+                            if (ConnectedDeviceTask.command.equals("1")) {
                                 laserAlignment.y12 = twoValue.getFirst();
                                 laserAlignment.y_12 = twoValue.getSecond();
-                            } else if (ConnectedDeviceTask.command.equals("b")) {
+                            } else if (ConnectedDeviceTask.command.equals("2")) {
                                 laserAlignment.y3 = twoValue.getFirst();
                                 laserAlignment.y_3 = twoValue.getSecond();
-                            } else if (ConnectedDeviceTask.command.equals("c")) {
+                            } else if (ConnectedDeviceTask.command.equals("3")) {
                                 laserAlignment.y6 = twoValue.getFirst();
                                 laserAlignment.y_6 = twoValue.getSecond();
-                            } else if (ConnectedDeviceTask.command.equals("d")) {
+                            } else if (ConnectedDeviceTask.command.equals("4")) {
                                 laserAlignment.y9 = twoValue.getFirst();
                                 laserAlignment.y_9 = twoValue.getSecond();
                             }
@@ -405,6 +414,7 @@ public class BluetoothLeService extends Service {
             double xb = (y_3 - y_9) / 2;
             double yb = (y_12 - y_6) / 2;
 
+            //需要先扫描二维码获取a,b,c的值
             double ey = ya + ((c + b) * (yb - ya)) / c;
             double fy = ya + (a + b + c) * (yb - ya) / c;
             double ex = xa + ((c + b) * (xb - xa)) / c;

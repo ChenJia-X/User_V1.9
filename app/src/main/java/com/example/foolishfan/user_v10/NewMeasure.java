@@ -138,8 +138,8 @@ public class NewMeasure extends AppCompatActivity implements UpdateAngle {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
                 String temp_str = sdf.format(dt);
                 Bundle bundle = new Bundle();
-                //bundle.putDoubleArray("result", bluetoothServiceBinder.calculate());
-                bundle.putDoubleArray("result", new double[]{23, 232, 123, 324.1});
+                bundle.putDoubleArray("result", bluetoothServiceBinder.calculate());
+                //bundle.putDoubleArray("result", new double[]{23, 232, 123, 324.1});
                 bundle.putString("deviceNumber", deviceNumber.getText().toString());
                 bundle.putString("tester", getSharedPreferences("userInfo", 0).getString("USER_NAME", "test"));
                 bundle.putString("date", temp_str);
@@ -168,16 +168,16 @@ public class NewMeasure extends AppCompatActivity implements UpdateAngle {
     @Override
     protected void onStop() {
         super.onStop();
-        if (bluetoothServiceBinder != null && bluetoothServiceBinder.isBound()) {
-            unbindService(serviceConnection);
-        }
-        unregisterReceiver(baseGattReceiver);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         bluetoothServiceBinder.cancel();//关闭socket
+        if (bluetoothServiceBinder != null && bluetoothServiceBinder.isBound()) {
+            unbindService(serviceConnection);
+        }
+        unregisterReceiver(baseGattReceiver);
     }
 
 
@@ -263,6 +263,9 @@ public class NewMeasure extends AppCompatActivity implements UpdateAngle {
                         a.setText(results[1]);
                         b.setText(results[2]);
                         c.setText(results[3]);
+                        BluetoothLeService.LaserAlignment.a = Double.parseDouble(results[1]);
+                        BluetoothLeService.LaserAlignment.b = Double.parseDouble(results[2]);
+                        BluetoothLeService.LaserAlignment.c = Double.parseDouble(results[3]);
                     } else {
                         showToast(context, "二维码格式错误！");
                     }

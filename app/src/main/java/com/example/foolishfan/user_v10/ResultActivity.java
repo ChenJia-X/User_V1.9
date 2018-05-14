@@ -58,10 +58,10 @@ public class ResultActivity extends AppCompatActivity {
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
             double[] results = bundle.getDoubleArray("result");
-            de1 = String.valueOf(results[0]);
-            de2 = String.valueOf(results[1]);
-            de3 = String.valueOf(results[2]);
-            de4 = String.valueOf(results[3]);
+            de1 = String.format("%.4f", results[0]);
+            de2 = String.format("%.4f", results[1]);
+            de3 = String.format("%.4f", results[2]);
+            de4 = String.format("%.4f", results[3]);
             deviceNumberS = bundle.getString("deviceNumber");
             testerS = bundle.getString("tester");
             dt = bundle.getString("date");
@@ -181,8 +181,7 @@ public class ResultActivity extends AppCompatActivity {
      * 创建文件夹
      */
     public void createDirectory() {
-        int result = FileUtils.createDir(REPORT_PATH);
-        showResult(result);
+        FileUtils.createDir(REPORT_PATH);
     }
 
     /**
