@@ -6,9 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -23,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import static com.example.foolishfan.user_v10.GlobalConstant.REPORT_PATH;
 import static com.example.foolishfan.user_v10.Utils.showToast;
 
 public class ResultActivity extends AppCompatActivity {
@@ -78,12 +77,11 @@ public class ResultActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (ContextCompat.checkSelfPermission(ResultActivity.this,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions(ResultActivity.this,
-                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_PERMISSION);
-                    }
+                if (ContextCompat.checkSelfPermission(ResultActivity.this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(ResultActivity.this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_PERMISSION);
+                    return;
                 }
                 produceReport();
             }
@@ -174,10 +172,8 @@ public class ResultActivity extends AppCompatActivity {
      * 创建单个文件
      */
     public void createFile() {
-        //获取 SD 卡路径
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-        filePath = path + "/user_v1.9/" + dt + ".txt";
-        int result = FileUtils.CreateFile();
+        filePath = REPORT_PATH + dt + ".txt";
+        int result = FileUtils.CreateFile(filePath);
         showResult(result);
     }
 
@@ -185,9 +181,7 @@ public class ResultActivity extends AppCompatActivity {
      * 创建文件夹
      */
     public void createDirectory() {
-        //获取 SD 卡路径
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-        int result = FileUtils.createDir(path + "/user_v1.9");
+        int result = FileUtils.createDir(REPORT_PATH);
         showResult(result);
     }
 

@@ -50,6 +50,7 @@
         <service android:name=".BluetoothLeService" />
 
         <activity android:name=".ResultActivity" />
+        <activity android:name=".ReportActivity"></activity>
     </application>
 
 </manifest>

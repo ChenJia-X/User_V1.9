@@ -2,7 +2,9 @@ package com.example.foolishfan.user_v10;
 
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -118,4 +120,38 @@ public class FileUtils {
         }
         return fileList;
     }
+
+    /**
+     * 读取文本文件中的内容
+     */
+    public static String readTxtFile(String strFilePath) {
+        String path = strFilePath;
+        StringBuilder content = new StringBuilder(); //文件内容字符串
+        //打开文件
+        File file = new File(path);
+        //如果path是传递过来的参数，可以做一个非目录的判断
+        if (file.isDirectory()) {
+            Log.d("FileUtils", "The File doesn't not exist.");
+        } else {
+            try {
+                FileReader fileReader = new FileReader(file);
+                BufferedReader reader = new BufferedReader(fileReader);
+                String line;
+                //分行读取
+                while ((line = reader.readLine()) != null) {
+                    content.append(line).append("\n");
+                }
+
+                reader.close();
+                fileReader.close();
+            } catch (java.io.FileNotFoundException e) {
+                Log.d("TestFile", "The File doesn't not exist.");
+            } catch (IOException e) {
+                Log.d("TestFile", e.getMessage());
+            }
+        }
+        return content.toString();
+    }
+
+
 }
